@@ -9,6 +9,7 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import requests  # <-- for PayPal REST calls
+import traceback  # <-- added for better logging
 
 # -------------------------------------------------
 # Env / paths
@@ -96,15 +97,33 @@ def _activate_plan_in_storage(email: str, plan_id: str):
         save_users(users)
 
 # ---------------------------
-# PayPal REST helpers
+# PayPal REST helpers (with detailed logging)
 # ---------------------------
+def _raise_with_body(resp: requests.Response):
+    """Raise HTTPError but include response text for Render logs."""
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as e:
+        body = None
+        try:
+            body = resp.json()
+        except Exception:
+            body = resp.text
+        msg = f"PayPal HTTPError {resp.status_code}: {body}"
+        # print so Render shows it in logs
+        print(msg)
+        raise requests.HTTPError(msg) from e
+
 def paypal_access_token():
     """Get OAuth token."""
+    if not PAYPAL_CLIENT_ID or not PAYPAL_SECRET:
+        raise RuntimeError("Missing PAYPAL_CLIENT_ID or PAYPAL_SECRET env vars")
+    print(f"[paypal] getting token (env={PAYPAL_ENV}) to {PAYPAL_BASE}")
     auth = (PAYPAL_CLIENT_ID, PAYPAL_SECRET)
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     data = {"grant_type": "client_credentials"}
     r = requests.post(f"{PAYPAL_BASE}/v1/oauth2/token", headers=headers, data=data, auth=auth, timeout=20)
-    r.raise_for_status()
+    _raise_with_body(r)
     return r.json()["access_token"]
 
 def paypal_create_order(total_gbp: float):
@@ -123,8 +142,10 @@ def paypal_create_order(total_gbp: float):
             }
         }]
     }
+    print(f"[paypal] create order body={body}")
     r = requests.post(f"{PAYPAL_BASE}/v2/checkout/orders", headers=headers, json=body, timeout=20)
-    r.raise_for_status()
+    _raise_with_body(r)
+    print(f"[paypal] create order response={r.json()}")
     return r.json()
 
 def paypal_capture_order(order_id: str):
@@ -133,8 +154,10 @@ def paypal_capture_order(order_id: str):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}",
     }
+    print(f"[paypal] capture order {order_id}")
     r = requests.post(f"{PAYPAL_BASE}/v2/checkout/orders/{order_id}/capture", headers=headers, timeout=20)
-    r.raise_for_status()
+    _raise_with_body(r)
+    print(f"[paypal] capture response={r.json()}")
     return r.json()
 
 # -------------------------------------------------
@@ -343,6 +366,8 @@ async def paypal_create(request: Request, plan_id: str = Form(...)):
         # Return the order ID so the JS SDK can approve/capture
         return JSONResponse({"id": order["id"]})
     except Exception as e:
+        print("[paypal] create-order failed:", repr(e))
+        traceback.print_exc()
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.post("/paypal/capture-order")
@@ -388,6 +413,8 @@ async def paypal_capture(request: Request, plan_id: str = Form(...), order_id: s
         if status != "COMPLETED":
             return JSONResponse({"error": f"Capture failed: {status}"}, status_code=400)
     except Exception as e:
+        print("[paypal] capture-order failed:", repr(e))
+        traceback.print_exc()
         return JSONResponse({"error": str(e)}, status_code=500)
 
     # Record order locally
