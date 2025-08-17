@@ -83,13 +83,17 @@ PLANS = {
 }
 
 def _activate_plan_in_storage(email: str, plan_id: str):
-    """Persist the plan activation in users.json."""
+    """Persist the plan activation in users.json (STACK CREDITS)."""
     selected = PLANS[plan_id]
     users = load_users()
     if email in users:
+        current_left = int(users[email].get("videos_left", 0))
+        new_total = current_left + selected["videos"]
+
         users[email]["has_paid"] = True
-        users[email]["videos_left"] = selected["videos"]
-        users[email]["max_credits"] = selected["videos"]
+        users[email]["videos_left"] = new_total
+        # keep progress bar cap at least as large as current total
+        users[email]["max_credits"] = max(int(users[email].get("max_credits", 0)), new_total)
         users[email]["plan_name"] = plan_id
         users[email]["plan_started_at"] = now().isoformat()
         users[email]["plan_expiry"] = None
@@ -110,7 +114,6 @@ def _raise_with_body(resp: requests.Response):
         except Exception:
             body = resp.text
         msg = f"PayPal HTTPError {resp.status_code}: {body}"
-        # print so Render shows it in logs
         print(msg)
         raise requests.HTTPError(msg) from e
 
@@ -207,7 +210,6 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
     users = load_users()
     user = users.get(email)
     if user and user.get("password") == password:
-        # Refresh session from saved user (keeps credits persistent)
         request.session["user"] = email
         request.session["has_paid"] = user.get("has_paid", False)
         request.session["videos_left"] = user.get("videos_left", 0)
@@ -251,7 +253,6 @@ async def checkout(request: Request, plan: str = "basic"):
 
     user = None
     if email:
-        # pass the full user dict to template so it can hide password field when logged in
         users = load_users()
         user = users.get(email)
 
@@ -264,23 +265,22 @@ async def checkout(request: Request, plan: str = "basic"):
             "plan_price": selected["price"],
             "video_limit": selected["videos"],
             "email": email,
-            "user": user,  # <-- template uses this to decide whether to show password field
+            "user": user,
             "paypal_client_id": os.getenv("PAYPAL_CLIENT_ID"),
             "paypal_plan_basic": os.getenv("PAYPAL_PLAN_BASIC"),
             "paypal_plan_pro": os.getenv("PAYPAL_PLAN_PRO"),
             "paypal_plan_elite": os.getenv("PAYPAL_PLAN_ELITE"),
-
         },
     )
 
 # -------------------------------------------------
-# Payment (your existing confirm route left as-is)
+# Payment (your existing confirm route left as-is, but STACK credits)
 # -------------------------------------------------
 @app.post("/confirm-payment")
 async def confirm_payment(
     request: Request,
     plan_id: str = Form(...),
-    email: str = Form(None),  # may be empty if not logged in; template should supply
+    email: str = Form(None),
 ):
     selected = PLANS.get(plan_id)
     if not selected:
@@ -288,18 +288,15 @@ async def confirm_payment(
 
     users = load_users()
 
-    # If user not logged in, try to read account fields too (in case your template posts them)
     form = await request.form()
     if not email:
         email = form.get("email")
 
-    # If this is a brand new buyer (not logged in + not in users), allow creating account from form
     if email and email not in users:
         name = form.get("name")
         password = form.get("password")
         promos = bool(form.get("promotions"))
         if not (name and password):
-            # If your template doesn’t submit these, user should register first
             return RedirectResponse(
                 url="/pricing?message=Please+sign+up+before+purchase",
                 status_code=302,
@@ -334,27 +331,29 @@ async def confirm_payment(
     )
     save_orders(orders)
 
-    # Activate membership
+    # STACK credits
+    current_left = int(users.get(email, {}).get("videos_left", 0))
+    new_left = current_left + selected["videos"]
+
     request.session["user"] = email
     request.session["has_paid"] = True
-    request.session["videos_left"] = selected["videos"]
-    request.session["max_credits"] = selected["videos"]
+    request.session["videos_left"] = new_left
+    request.session["max_credits"] = max(int(users.get(email, {}).get("max_credits", 0)), new_left)
 
-    # Persist to users.json
     if email in users:
         users[email]["has_paid"] = True
-        users[email]["videos_left"] = selected["videos"]
-        users[email]["max_credits"] = selected["videos"]
+        users[email]["videos_left"] = new_left
+        users[email]["max_credits"] = max(int(users[email].get("max_credits", 0)), new_left)
         users[email]["plan_name"] = plan_id
         users[email]["plan_started_at"] = now().isoformat()
-        users[email]["plan_expiry"] = None        # only set when cancelled
+        users[email]["plan_expiry"] = None
         users[email]["cancelled"] = False
         save_users(users)
 
     return RedirectResponse(url="/?message=Payment+Confirmed", status_code=302)
 
 # -------------------------------------------------
-# PayPal endpoints (NEW)
+# PayPal endpoints (STACK credits)
 # -------------------------------------------------
 @app.post("/paypal/create-order")
 async def paypal_create(request: Request, plan_id: str = Form(...)):
@@ -363,7 +362,6 @@ async def paypal_create(request: Request, plan_id: str = Form(...)):
         return JSONResponse({"error": "Invalid plan"}, status_code=400)
     try:
         order = paypal_create_order(plan["price"])
-        # Return the order ID so the JS SDK can approve/capture
         return JSONResponse({"id": order["id"]})
     except Exception as e:
         print("[paypal] create-order failed:", repr(e))
@@ -376,7 +374,6 @@ async def paypal_capture(request: Request, plan_id: str = Form(...), order_id: s
     if not plan:
         return JSONResponse({"error": "Invalid plan"}, status_code=400)
 
-    # Require an email in session or in form (for new customers)
     email = request.session.get("user")
     users = load_users()
 
@@ -384,7 +381,6 @@ async def paypal_capture(request: Request, plan_id: str = Form(...), order_id: s
     if not email:
         email = form.get("email")
 
-    # If new buyer (not logged in), allow create with password fields sent from your checkout form
     if email and email not in users:
         name = form.get("name")
         password = form.get("password")
@@ -408,7 +404,6 @@ async def paypal_capture(request: Request, plan_id: str = Form(...), order_id: s
 
     try:
         result = paypal_capture_order(order_id)
-        # Basic success check
         status = result.get("status", "")
         if status != "COMPLETED":
             return JSONResponse({"error": f"Capture failed: {status}"}, status_code=400)
@@ -435,14 +430,17 @@ async def paypal_capture(request: Request, plan_id: str = Form(...), order_id: s
     )
     save_orders(orders)
 
-    # Activate in session + storage
+    # STACK credits in storage + session
+    current_left = int(users.get(email, {}).get("videos_left", 0))
+    new_left = current_left + plan["videos"]
+
     request.session["user"] = email
     request.session["has_paid"] = True
-    request.session["videos_left"] = plan["videos"]
-    request.session["max_credits"] = plan["videos"]
+    request.session["videos_left"] = new_left
+    request.session["max_credits"] = max(int(users.get(email, {}).get("max_credits", 0)), new_left)
+
     _activate_plan_in_storage(email, plan_id)
 
-    # Respond JSON so your JS can redirect to /generate or show success message
     return JSONResponse({"ok": True})
 
 @app.post("/paypal/activate")
@@ -460,7 +458,6 @@ async def paypal_activate(request: Request):
     if not user:
         return JSONResponse({"ok": False, "error": "User not found"}, status_code=404)
 
-    # credits per plan
     if plan_key == "basic":
         add_credits = 5
     elif plan_key == "pro":
@@ -470,11 +467,9 @@ async def paypal_activate(request: Request):
     else:
         return JSONResponse({"ok": False, "error": "Unknown plan"}, status_code=400)
 
-    # Unlock / stack credits
     user["has_paid"] = True
     current_left = int(user.get("videos_left", 0))
     user["videos_left"] = current_left + add_credits
-    # Keep max_credits at least as large as current balance for the progress bar
     user["max_credits"] = max(int(user.get("max_credits", 0)), user["videos_left"])
     user["plan_name"] = plan_key
     user["plan_started_at"] = now().isoformat()
@@ -482,7 +477,6 @@ async def paypal_activate(request: Request):
     user["cancelled"] = False
     save_users(users)
 
-    # sync session
     request.session["has_paid"] = True
     request.session["videos_left"] = user["videos_left"]
     request.session["max_credits"] = user["max_credits"]
@@ -525,11 +519,9 @@ async def cancel_membership(request: Request, password: str = Form(...)):
     if not user or user.get("password") != password:
         return RedirectResponse(url="/account?message=Incorrect+password", status_code=302)
 
-    # If already cancelled, just return
     if user.get("cancelled"):
         return RedirectResponse(url="/account?message=Already+cancelled", status_code=302)
 
-    # Work out expiry = started_at + 30 days (or now + 30 if missing)
     started_str = user.get("plan_started_at")
     if started_str:
         try:
@@ -542,10 +534,8 @@ async def cancel_membership(request: Request, password: str = Form(...)):
 
     user["cancelled"] = True
     user["plan_expiry"] = expiry.isoformat()
-    # keep has_paid True until expiry date passes
     save_users(users)
 
-    # Keep session has_paid True (access until expiry), but nothing else changes
     return RedirectResponse(url="/account?message=Membership+cancelled", status_code=302)
 
 # -------------------------------------------------
@@ -566,7 +556,6 @@ def _enforce_expiry_in_session(request: Request):
         try:
             expiry_dt = datetime.fromisoformat(plan_expiry)
             if now() > expiry_dt:
-                # membership expired
                 user["has_paid"] = False
                 user["videos_left"] = 0
                 save_users(users)
@@ -598,7 +587,7 @@ async def generate(request: Request):
             "email": email,
             "has_paid": has_paid,
             "videos_left": videos_left,
-            "plan_total": max_credits,  # template uses plan_total for the bar
+            "plan_total": max_credits,
         },
     )
 
@@ -616,7 +605,6 @@ async def generate_video(request: Request, prompt: str = Form(...)):
     if not email or not has_paid or videos_left <= 0:
         return RedirectResponse(url="/pricing?message=Upgrade+to+generate+videos", status_code=302)
 
-    # If you have Replicate set up, keep this. Otherwise you can stub a URL.
     try:
         import replicate
         REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
@@ -628,10 +616,8 @@ async def generate_video(request: Request, prompt: str = Form(...)):
         )
         generated_video_url = output[0] if isinstance(output, list) else output
     except Exception:
-        # Stub a fake URL so you can still test the flow
         generated_video_url = "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4"
 
-    # Decrement credits once per successful generation
     videos_left = int(videos_left) - 1
     if videos_left < 0:
         videos_left = 0
