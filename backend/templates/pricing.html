@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+  * {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .pricing-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-top: 40px;
+    margin-bottom: 30px;
+  }
+
+  .pricing-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 60px;
+  }
+
+  .plan-card {
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    padding: 40px;
+    width: 300px;
+    text-align: center;
+    transition: transform 0.3s;
+  }
+
+  .plan-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .plan-card h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .plan-card .price {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+
+  .plan-card p {
+    font-size: 0.95rem;
+    color: #444;
+    font-weight: 400;
+    margin: 5px 0;
+  }
+
+  .buy-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    font-size: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+  }
+
+  .buy-button:hover {
+    background-color: #0056b3;
+  }
+
+  .modal-content label,
+  .modal-content input,
+  .modal-content a,
+  .modal-content p,
+  .modal-content h2,
+  .modal-content button {
+    font-family: 'Inter', sans-serif !important;
+  }
+
+  .modal-content label {
+    font-weight: 600;
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+  }
+</style>
+
+<h1 class="pricing-title">Pricing</h1>
+
+<div class="pricing-container">
+  <div class="plan-card">
+    <h3>Basic</h3>
+    <div class="price">£24.99</div>
+    <p>/month</p>
+    <p>5 videos per month</p>
+    <p>5 seconds per video</p>
+    <!-- Route to real checkout -->
+    <button class="buy-button" onclick="window.location.href='/checkout?plan=basic'">Buy Now</button>
+  </div>
+
+  <div class="plan-card">
+    <h3>Pro</h3>
+    <div class="price">£49.99</div>
+    <p>/month</p>
+    <p>15 videos per month</p>
+    <p>5 seconds per video</p>
+    <!-- Route to real checkout -->
+    <button class="buy-button" onclick="window.location.href='/checkout?plan=pro'">Buy Now</button>
+  </div>
+
+  <div class="plan-card">
+    <h3>Elite</h3>
+    <div class="price">£99.99</div>
+    <p>/month</p>
+    <p>30 videos per month</p>
+    <p>5 seconds per video</p>
+    <!-- Route to real checkout -->
+    <button class="buy-button" onclick="window.location.href='/checkout?plan=elite'">Buy Now</button>
+  </div>
+</div>
+
+<!-- Checkout Modal (kept but unused) -->
+<div id="checkoutModal" class="modal" style="display:none;">
+  <div class="modal-content" style="max-width: 480px; margin: 100px auto; padding: 40px; background: white; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+    <h2 style="text-align:center; margin-bottom: 20px;">Complete Your Purchase</h2>
+    <form id="checkoutForm" method="POST" action="/fake-pay">
+      <input type="hidden" name="plan" id="selectedPlan">
+      <input type="hidden" name="price" id="selectedPrice">
+      <input type="hidden" name="plan_id" id="planIdInput">
+
+      <label>Name</label>
+      <input type="text" name="name" required class="form-control">
+
+      <label>Email</label>
+      <input type="email" name="email" required class="form-control">
+
+      <label>Create Password</label>
+      <input type="password" name="password" required class="form-control">
+
+      <label>
+        <input type="checkbox" name="terms" required>
+        I agree to <a href="#" onclick="showTerms()" style="color:#007bff;">Terms and Conditions</a>
+      </label><br><br>
+
+      <label>
+        <input type="checkbox" name="promos"> Receive promotional offers
+      </label><br><br>
+
+      <button type="submit" class="buy-button">Buy Now</button>
+
+      <p style="text-align:center;margin-top:20px;">
+        Already have an account? <a href="/login" style="color:#007bff;">Log in</a>
+      </p>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openCheckout(plan, price) {
+    // no longer used – we go straight to /checkout
+    document.getElementById('selectedPlan').value = plan;
+    document.getElementById('selectedPrice').value = price;
+    document.getElementById('planIdInput').value = plan.toLowerCase();
+    document.getElementById('checkoutModal').style.display = 'block';
+  }
+
+  function showTerms() {
+    alert("You agree that PromptPulse may reuse or distribute any content you generate on our platform. We are not liable for misuse. Continued use implies agreement.");
+  }
+
+  window.onclick = function(event) {
+    const modal = document.getElementById("checkoutModal");
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  }
+</script>
+
+{% endblock %}

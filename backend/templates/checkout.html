@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section section-center">
+  <div class="checkout-container">
+    <!-- Left: Summary -->
+    <div class="checkout-summary">
+      <p><strong>Price:</strong> £{{ plan_price }}</p>
+      <p><strong>Videos/month:</strong> {{ video_limit }}</p>
+    </div>
+
+    <!-- Right: User + PayPal -->
+    <div class="checkout-form">
+      <!-- We keep this form so the backend can read fields for NEW customers -->
+      <form id="checkoutForm">
+        <input type="hidden" name="plan_id" value="{{ plan_id }}">
+
+        {% if not user %}
+          <input type="text" name="name" placeholder="Full Name" required>
+          <input type="email" name="email" placeholder="Email" required>
+          <input type="password" name="password" placeholder="Create Password" required>
+
+          <label>
+            <input type="checkbox" name="terms" required>
+            <span class="blue-link" onclick="showTerms()">Agree to Terms and Conditions</span>
+          </label>
+          <label>
+            <input type="checkbox" name="promotions"> Receive promotional offers
+          </label>
+        {% else %}
+          <p>Logged in as: {{ user.name }} ({{ user.email }})</p>
+          <input type="hidden" name="name" value="{{ user.name }}">
+          <input type="hidden" name="email" value="{{ user.email }}">
+          <input type="hidden" name="password" value="{{ user.password }}">
+          <input type="hidden" name="terms" value="on">
+          <input type="hidden" name="promotions" value="{{ 'on' if user.promos else '' }}">
+        {% endif %}
+
+        <!-- ❌ Removed: card/email input and the blue “Complete Payment” button -->
+
+        <!-- ✅ PayPal Button Only -->
+        <div id="paypal-button-container" style="margin-top:14px;"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+{% if paypal_client_id %}
+  <!-- PayPal SDK (uses the client id passed from backend) -->
+  <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=GBP"></script>
+
+  <script>
+    function collectCheckoutFields() {
+      return new FormData(document.getElementById('checkoutForm'));
+    }
+
+    paypal.Buttons({
+      style: { layout: "horizontal", color: "gold", shape: "pill", label: "paypal" },
+
+      // Create order on backend for the chosen plan
+      createOrder: function () {
+        const fd = new FormData();
+        fd.append("plan_id", "{{ plan_id }}");
+        return fetch("/paypal/create-order", { method: "POST", body: fd })
+          .then(res => res.json())
+          .then(out => {
+            if (!out.id) throw new Error(out.error || "Failed to create order.");
+            return out.id;
+          });
+      },
+
+      // Capture after approval (send form fields so new customers get created)
+      onApprove: function (data) {
+        const fd = collectCheckoutFields();
+        fd.append("order_id", data.orderID);
+        fd.append("plan_id", "{{ plan_id }}");
+
+        return fetch("/paypal/capture-order", { method: "POST", body: fd })
+          .then(res => res.json())
+          .then(out => {
+            if (out.ok) {
+              window.location.href = "/generate";
+            } else {
+              alert(out.error || "Payment capture failed. Please try again.");
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            alert("Something went wrong. Please try again.");
+          });
+      },
+
+      onError: function (err) {
+        console.error("PayPal error:", err);
+        alert("PayPal error. Please try again.");
+      }
+    }).render("#paypal-button-container");
+  </script>
+{% endif %}
+{% endblock %}

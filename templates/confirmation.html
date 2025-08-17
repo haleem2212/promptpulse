@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section center">
+  {% if message %}
+    <div class="message success">{{ message }}</div>
+    <a href="/" class="buy-button" style="margin-top: 20px;">Back to Home</a>
+  {% else %}
+    <div class="message error">Something went wrong.</div>
+  {% endif %}
+</section>
+{% endblock %}

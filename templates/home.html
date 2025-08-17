@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+  }
+  body {
+    background-color: #fff;
+    color: #111;
+  }
+  .hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 60px;
+  }
+  .hero-text {
+    max-width: 50%;
+  }
+  .hero-text h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .hero-text p {
+    font-size: 18px;
+    margin-bottom: 30px;
+  }
+  .btn {
+    background-color: #007BFF;
+    color: white;
+    padding: 14px 26px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .hero-video {
+    max-width: 350px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
+  }
+  .pricing-section {
+    padding: 60px;
+    text-align: center;
+  }
+  .pricing-section h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 40px;
+  }
+  .plans {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+  }
+  .plan {
+    border: 1px solid #ddd;
+    padding: 30px;
+    border-radius: 12px;
+    width: 250px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .plan h3 {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  .plan .price {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .plan .videos {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  .plan a {
+    background-color: #007BFF;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 8px;
+    display: inline-block;
+    margin-top: 10px;
+    font-weight: 600;
+  }
+</style>
+
+<section class="hero">
+  <div class="hero-text">
+    <h1>Generate TikTok Videos with AI</h1>
+    <p>Create engaging content effortlessly using advanced AI technology.</p>
+    <a href="/pricing" class="btn">Get Started</a>
+  </div>
+  <div class="hero-video">
+    <img src="https://placekitten.com/350/450" alt="TikTok Cat Video" width="100%">
+  </div>
+</section>
+
+<section class="pricing-section">
+  <h2>Pricing</h2>
+  <div class="plans">
+    <div class="plan">
+      <h3>Basic</h3>
+      <div class="price">£24.99/month</div>
+      <div class="videos">5 videos/month<br>5 seconds each</div>
+      <a href="/pricing">Get Started</a>
+    </div>
+    <div class="plan">
+      <h3>Pro</h3>
+      <div class="price">£49.99/month</div>
+      <div class="videos">15 videos/month<br>5 seconds each</div>
+      <a href="/pricing">Get Started</a>
+    </div>
+    <div class="plan">
+      <h3>Elite</h3>
+      <div class="price">£99.99/month</div>
+      <div class="videos">30 videos/month<br>5 seconds each</div>
+      <a href="/pricing">Get Started</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

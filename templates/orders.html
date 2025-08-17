@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 style="text-align:center; margin-top:20px;">All Orders</h2>
+{% if orders %}
+<table style="width:90%; margin:20px auto; border-collapse:collapse;">
+    <tr style="background:#46A3DB; color:white;">
+        <th style="padding:10px; border:1px solid #ccc;">Date & Time</th>
+        <th style="padding:10px; border:1px solid #ccc;">Name</th>
+        <th style="padding:10px; border:1px solid #ccc;">Email</th>
+        <th style="padding:10px; border:1px solid #ccc;">Plan</th>
+        <th style="padding:10px; border:1px solid #ccc;">Price</th>
+        <th style="padding:10px; border:1px solid #ccc;">Payment ID</th>
+    </tr>
+    {% for order in orders %}
+    <tr>
+        <td style="padding:8px; border:1px solid #ccc;">{{ order.timestamp }}</td>
+        <td style="padding:8px; border:1px solid #ccc;">{{ order.user.name }}</td>
+        <td style="padding:8px; border:1px solid #ccc;">{{ order.user.email }}</td>
+        <td style="padding:8px; border:1px solid #ccc;">{{ order.plan }}</td>
+        <td style="padding:8px; border:1px solid #ccc;">£{{ order.price }}</td>
+        <td style="padding:8px; border:1px solid #ccc;">{{ order.payment.id }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p style="text-align:center;">No orders yet.</p>
+{% endif %}
+{% endblock %}

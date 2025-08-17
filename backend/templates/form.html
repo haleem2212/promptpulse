@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Generate AI Video</h2>
+    <form action="/generate" method="post">
+        <input type="text" name="prompt" placeholder="Enter your video prompt" required>
+        <select name="plan">
+            <option value="basic">Basic (£19.49)</option>
+            <option value="pro">Pro (£85.99)</option>
+            <option value="elite">Elite (£203.99)</option>
+        </select>
+        <button type="submit">Generate</button>
+    </form>
+{% endblock %}

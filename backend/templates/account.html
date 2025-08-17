@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section center">
+  <h1 class="section-title">My Account</h1>
+
+  {% if success %}
+    <div style="color: green; margin-bottom: 20px; font-weight: bold;">{{ success }}</div>
+  {% endif %}
+
+  <div class="account-info">
+    <p><strong>Name:</strong> {{ user.name }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>Plan:</strong> {{ user.plan_name|capitalize }}</p>
+    <p><strong>Videos Left:</strong> {{ user.videos_left }}</p>
+
+    {% if user.cancelled %}
+      <p><strong>Membership Expires:</strong> {{ user.plan_expiry }}</p>
+      <a href="/pricing" class="btn" style="margin-top: 15px;">Resume Membership</a>
+    {% else %}
+      <form method="post" action="/cancel-membership" onsubmit="return confirmCancel();">
+        <label for="password" style="font-weight: bold;">Confirm Password to Cancel:</label><br>
+        <input type="password" name="password" required style="padding: 8px; margin-top: 8px;"><br><br>
+        <button type="submit" class="btn cancel">Cancel Membership</button>
+      </form>
+    {% endif %}
+
+    <a href="/pricing" class="btn" style="margin-top: 20px;">Upgrade Plan</a>
+  </div>
+</section>
+
+<script>
+function confirmCancel() {
+    return confirm("Are you sure you want to cancel your membership?");
+}
+</script>
+{% endblock %}

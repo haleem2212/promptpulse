@@ -1,0 +1,57 @@
+{
+    "haleemalikhan2212@gmail.com": {
+        "name": "haleem",
+        "email": "haleemalikhan2212@gmail.com",
+        "password": "RubenDias3",
+        "promos": true,
+        "has_paid": false,
+        "videos_left": 11,
+        "plan_cancelled": true,
+        "plan_expiry": "2025-09-06"
+    },
+    "thebey2212@gmail.com": {
+        "name": "haleem",
+        "email": "thebey2212@gmail.com",
+        "password": "RubenDias3",
+        "promos": true,
+        "has_paid": true,
+        "videos_left": 12,
+        "plan_expiry": "2025-09-06T23:55:37.030960",
+        "cancelled": true,
+        "max_credits": 15,
+        "plan_name": "pro",
+        "plan_started_at": "2025-08-07T23:55:37.030960"
+    },
+    "efraimjonah@gmail.com": {
+        "name": "haleem",
+        "email": "efraimjonah@gmail.com",
+        "password": "haleem123",
+        "promos": true
+    },
+    "haleeem2212@gmail.com": {
+        "name": "haleem",
+        "email": "haleeem2212@gmail.com",
+        "password": "RubenDias3",
+        "promos": true,
+        "has_paid": true,
+        "videos_left": 5,
+        "max_credits": 5,
+        "plan_name": "basic",
+        "plan_started_at": "2025-08-11T00:39:37.242848",
+        "plan_expiry": null,
+        "cancelled": false
+    },
+    "zamsoph6@gmail.com": {
+        "name": "haleem zameer",
+        "email": "zamsoph6@gmail.com",
+        "password": "RubenDias3",
+        "promos": false,
+        "has_paid": true,
+        "videos_left": 5,
+        "max_credits": 5,
+        "plan_name": "basic",
+        "plan_started_at": "2025-08-17T21:04:41.695532",
+        "plan_expiry": null,
+        "cancelled": false
+    }
+}

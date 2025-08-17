@@ -1,0 +1,314 @@
+# Write clean style.css to match the approved minimal layout
+style_css = """
+body {
+  font-family: 'Inter', sans-serif;
+  background: #fff;
+  margin: 0;
+  color: #111;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 60px;
+  background-color: white;
+  box-shadow: 0 0 8px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.nav-links, #userNav {
+  list-style: none;
+  display: flex;
+  gap: 20px;
+}
+
+.nav-links a, #userNav a {
+  text-decoration: none;
+  color: #111;
+  font-weight: 500;
+}
+
+.section {
+  padding: 60px 20px;
+}
+
+.section-title {
+  font-size: 36px;
+  margin-bottom: 40px;
+}
+
+.center {
+  text-align: center;
+}
+
+.pricing-grid {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.pricing-card {
+  background: white;
+  border-radius: 14px;
+  padding: 30px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  width: 280px;
+  transition: 0.2s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-5px);
+}
+
+.price {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.per {
+  margin-bottom: 15px;
+  color: #666;
+}
+
+.btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  margin-top: 20px;
+  font-weight: 600;
+}
+
+.btn.cancel {
+  background: #ccc;
+  color: #111;
+  margin-left: 10px;
+}
+
+.btn.full {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.hidden {
+  display: none;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1001;
+  left: 0; top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.modal-content input[type=text],
+.modal-content input[type=email],
+.modal-content input[type=password] {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.modal-content label {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.modal-content .blue-link {
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.close {
+  float: right;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.error {
+  margin-top: 10px;
+  color: red;
+  font-size: 14px;
+}
+
+.checkout-container {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+.checkout-summary,
+.checkout-form {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  width: 320px;
+}
+
+.payment-box input {
+  margin-top: 12px;
+  padding: 10px;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.message {
+  padding: 20px;
+  margin: 20px auto;
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.message.success {
+  background: #e8f8e4;
+  color: #2d8837;
+  border: 1px solid #2d8837;
+}
+
+.message.error {
+  background: #f8e4e4;
+  color: #882d2d;
+  border: 1px solid #882d2d;
+}
+
+.account-info {
+  background: white;
+  max-width: 500px;
+  margin: auto;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+"""
+
+with open(os.path.join(static_dir, "style.css"), "w") as f:
+    f.write(style_css)
+
+"✅ style.css created with modern design, pricing cards, navbar, modals, and button styling."
+/* Make modal buttons match main site blue buttons */
+.modal-content button,
+.modal-content input[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s ease;
+}
+
+.modal-content button:hover,
+.modal-content input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+/* =========================
+   Mobile polish
+   ========================= */
+@media (max-width: 768px) {
+  /* Header: keep logo level with nav links */
+  .navbar {
+    display: flex;
+    align-items: center;       /* vertically center logo + links */
+    gap: 12px;
+  }
+  /* Use whichever your logo element is: .logo or .brand (both included) */
+  .navbar .logo,
+  .navbar .brand {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;                 /* remove odd bumps */
+    line-height: 1;
+  }
+  /* If your links are in a wrapper like .nav, .nav-links, or .navbar-right,
+     this keeps them level with the logo */
+  .nav, .nav-links, .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-left: auto;
+  }
+
+  /* Hero: left-align like your screenshot #2, reduce oversized type */
+  .hero,
+  .hero-grid,
+  .hero-section {
+    display: grid;
+    grid-template-columns: 1fr !important; /* single column on mobile */
+    row-gap: 18px;
+  }
+  .hero h1,
+  .hero-title {
+    text-align: left !important;
+    font-size: 42px !important;
+    line-height: 1.05 !important;
+    margin: 0 0 8px 0;
+  }
+  .hero p {
+    text-align: left !important;
+    font-size: 16px;
+  }
+  .hero .cta,
+  .hero .actions {
+    justify-content: flex-start;
+  }
+
+  /* Pricing: turn cards into a swipeable row */
+  .pricing-container {
+    display: flex !important;
+    overflow-x: auto;
+    gap: 16px;
+    padding: 0 16px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch; /* momentum scroll on iOS */
+  }
+  .pricing-container::-webkit-scrollbar { display: none; }
+
+  .plan-card {
+    flex: 0 0 auto;
+    min-width: 82%;            /* big, readable card */
+    scroll-snap-align: center; /* snap to center when swiping */
+  }
+
+  /* Tweak card internals so they don’t look cramped */
+  .plan-card .price { font-size: 28px; }
+  .plan-card h3 { font-size: 20px; }
+}

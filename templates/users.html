@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 style="text-align:center; margin-top:20px;">Registered Users</h2>
+{% if users %}
+<table style="width:90%; margin:20px auto; border-collapse:collapse;">
+    <tr style="background:#46A3DB; color:white;">
+        <th style="padding:10px; border:1px solid #ccc;">Date & Time</th>
+        <th style="padding:10px; border:1px solid #ccc;">Name</th>
+        <th style="padding:10px; border:1px solid #ccc;">Email</th>
+        <th style="padding:10px; border:1px solid #ccc;">Promotional Consent</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td style="padding:8px; border:1px solid #ccc;">{{ user.timestamp }}</td>
+        <td style="padding:8px; border:1px solid #ccc;">{{ user.name }}</td>
+        <td style="padding:8px; border:1px solid #ccc;">{{ user.email }}</td>
+        <td style="padding:8px; border:1px solid #ccc;">{{ "Yes" if user.agreePromo else "No" }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p style="text-align:center;">No users registered yet.</p>
+{% endif %}
+{% endblock %}

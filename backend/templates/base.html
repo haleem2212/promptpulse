@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PromptPulse</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="icon" href="/static/favicon.ico" />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+      * {
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 9999;
+      }
+
+      body {
+        background-color: #f8f9fa;
+      }
+
+      .navbar, .nav-link, .nav-link a {
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 700 !important;
+      }
+
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 40px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      }
+
+      .navbar .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #007bff;
+        text-decoration: none;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 25px;
+        align-items: center;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #333;
+        transition: color 0.2s;
+      }
+
+      .nav-links a:hover {
+        color: #007bff;
+      }
+
+      .nav-button {
+        background-color: #007bff;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background-color 0.3s;
+      }
+
+      .nav-button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- Signup Modal -->
+    <div id="signupModal" class="modal" style="display:none;">
+      <div class="modal-content" style="max-width: 480px; margin: 100px auto; padding: 40px; background: white; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        <h2 style="text-align:center; margin-bottom: 20px;">Create Account</h2>
+        <form method="POST" action="/signup">
+          <label>Name</label>
+          <input type="text" name="name" required class="form-control" />
+          <label>Email</label>
+          <input type="email" name="email" required class="form-control" />
+          <label>Create Password</label>
+          <input type="password" name="password" required class="form-control" />
+          <label>
+            <input type="checkbox" name="terms" required />
+            I agree to <a href="#" onclick="showTerms()" style="color:#007bff;">Terms and Conditions</a>
+          </label><br><br>
+          <label>
+            <input type="checkbox" name="promos" />
+            Receive promotional offers
+          </label><br><br>
+          <button type="submit" class="buy-button">Sign Up</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal" style="display:none;">
+      <div class="modal-content" style="max-width: 480px; margin: 100px auto; padding: 40px; background: white; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        <h2 style="text-align:center; margin-bottom: 20px;">Login</h2>
+        <form method="POST" action="/login">
+          <label>Email</label>
+          <input type="email" name="email" required class="form-control" />
+          <label>Password</label>
+          <input type="password" name="password" required class="form-control" />
+          <button type="submit" class="buy-button">Login</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="navbar">
+      <a href="/" class="logo">PromptPulse</a>
+      <div class="nav-links">
+        <a href="/pricing">Pricing</a>
+        {% if request.session.get('user') %}
+          {% if request.session.get('has_paid') %}
+            <a href="/generate" class="nav-button">Create AI Video</a>
+          {% endif %}
+          <a href="/account">My Account</a>
+          <a href="/logout">Logout</a>
+        {% else %}
+          <a href="javascript:void(0)" onclick="openSignupModal()">Sign Up</a>
+          <a href="javascript:void(0)" onclick="openLoginModal()">Login</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if request.query_params.get('message') %}
+      <div id="background0color: #d4edda; color: #155724; padding: 10px 20px; text-align: center; border-radius: 5px; margin: 15px; transition: opacity qs ease;">
+        {{ request.query_params.get('message') }}
+      </div>
+    {% endif %}
+
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+
+    <script src="/static/script.js"></script>
+    <script>
+      function openSignupModal() {
+        document.getElementById("signupModal").style.display = "block";
+      }
+
+      function openLoginModal() {
+        document.getElementById("loginModal").style.display = "block";
+      }
+
+      window.onclick = function(event) {
+        if (event.target.id === "signupModal") {
+          event.target.style.display = "none";
+        }
+        if (event.target.id === "loginModal") {
+          event.target.style.display = "none";
+        }
+      }
+
+      function showTerms() {
+        alert("You agree that PromptPulse may reuse any content you generate. We are not liable for misuse.");
+      }
+
+      setTimeout(function () {
+        var msg = document.getElementById("successMessage");
+        if (msg) {
+          msg.style.display = "none";
+        }
+      }, 4000);
+    </script>
+  </body>
+</html>
