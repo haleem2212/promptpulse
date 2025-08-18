@@ -11,6 +11,14 @@ from dotenv import load_dotenv
 import requests  # <-- for PayPal REST calls
 import traceback  # <-- added for better logging
 
+# ---------- NEW: DB imports ----------
+from typing import Dict, Any, List, Optional
+from sqlalchemy import (
+    create_engine, Column, String, Integer, Boolean, DateTime, Float, Text
+)
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.exc import SQLAlchemyError
+
 # -------------------------------------------------
 # Env / paths
 # -------------------------------------------------
@@ -30,6 +38,52 @@ PAYPAL_BASE = "https://api-m.sandbox.paypal.com" if PAYPAL_ENV == "sandbox" else
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 ORDERS_FILE = os.path.join(BASE_DIR, "orders.json")
 
+# ---------- NEW: Database URL ----------
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+# ---------- NEW: SQLAlchemy base / engine ----------
+Base = declarative_base()
+SessionLocal = None
+engine = None
+
+if DATABASE_URL:
+    # Allow both psycopg2 and "postgresql://" URLs
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+# ---------- NEW: Models ----------
+class User(Base):
+    __tablename__ = "users"
+    email = Column(String, primary_key=True)
+    name = Column(String, nullable=True)
+    password = Column(Text, nullable=True)
+    promos = Column(Boolean, default=False)
+
+    has_paid = Column(Boolean, default=False)
+    videos_left = Column(Integer, default=0)
+    max_credits = Column(Integer, default=0)
+
+    plan_name = Column(String, nullable=True)
+    plan_started_at = Column(DateTime, nullable=True)
+    plan_expiry = Column(DateTime, nullable=True)
+    cancelled = Column(Boolean, default=False)
+
+class Order(Base):
+    __tablename__ = "orders"
+    id = Column(String, primary_key=True)
+    email = Column(String, nullable=False, index=True)
+    plan = Column(String, nullable=False)
+    amount = Column(Float, nullable=False)
+    videos_left = Column(Integer, default=0)
+    end_date = Column(String, nullable=True)          # keep as string to match your code
+    created_at = Column(DateTime, default=datetime.utcnow)
+    provider = Column(String, nullable=True)          # e.g., "paypal"
+    paypal_order_id = Column(String, nullable=True)
+
+# ---------- NEW: Create tables if DB is enabled ----------
+if engine:
+    Base.metadata.create_all(bind=engine)
+
 # -------------------------------------------------
 # App
 # -------------------------------------------------
@@ -41,7 +95,137 @@ templates = Jinja2Templates(directory="templates")
 # -------------------------------------------------
 # Helpers
 # -------------------------------------------------
+def now():
+    return datetime.now()
+
+def next_month(from_dt: datetime) -> datetime:
+    return from_dt + timedelta(days=30)
+
+# ---------- NEW: DB helper wrappers to preserve your API ----------
+
+def _user_row_to_dict(u: User) -> Dict[str, Any]:
+    return {
+        "name": u.name,
+        "email": u.email,
+        "password": u.password,
+        "promos": bool(u.promos),
+        "has_paid": bool(u.has_paid),
+        "videos_left": int(u.videos_left or 0),
+        "max_credits": int(u.max_credits or 0),
+        "plan_name": u.plan_name,
+        "plan_started_at": u.plan_started_at.isoformat() if u.plan_started_at else None,
+        "plan_expiry": u.plan_expiry.isoformat() if u.plan_expiry else None,
+        "cancelled": bool(u.cancelled),
+    }
+
+def _dict_to_user_fields(d: Dict[str, Any]) -> Dict[str, Any]:
+    # Convert iso strings back to datetimes for DB fields
+    f = dict(d)
+    if isinstance(f.get("plan_started_at"), str):
+        try:
+            f["plan_started_at"] = datetime.fromisoformat(f["plan_started_at"])
+        except Exception:
+            f["plan_started_at"] = None
+    if isinstance(f.get("plan_expiry"), str):
+        try:
+            f["plan_expiry"] = datetime.fromisoformat(f["plan_expiry"])
+        except Exception:
+            f["plan_expiry"] = None
+    return f
+
+def db_load_users() -> Dict[str, Dict[str, Any]]:
+    """Return a dict like your JSON: {email: user_dict}"""
+    out: Dict[str, Dict[str, Any]] = {}
+    with SessionLocal() as db:
+        for u in db.query(User).all():
+            out[u.email] = _user_row_to_dict(u)
+    return out
+
+def db_save_users(users: Dict[str, Dict[str, Any]]) -> None:
+    """Upsert all provided users."""
+    with SessionLocal() as db:
+        for email, data in users.items():
+            fields = _dict_to_user_fields(data)
+            row = db.get(User, email)
+            if not row:
+                row = User(email=email)
+                db.add(row)
+            # set fields
+            row.name = fields.get("name")
+            row.password = fields.get("password")
+            row.promos = bool(fields.get("promos", False))
+            row.has_paid = bool(fields.get("has_paid", False))
+            row.videos_left = int(fields.get("videos_left", 0) or 0)
+            row.max_credits = int(fields.get("max_credits", 0) or 0)
+            row.plan_name = fields.get("plan_name")
+            row.plan_started_at = fields.get("plan_started_at")
+            row.plan_expiry = fields.get("plan_expiry")
+            row.cancelled = bool(fields.get("cancelled", False))
+        db.commit()
+
+def db_get_user(email: str) -> Optional[Dict[str, Any]]:
+    with SessionLocal() as db:
+        row = db.get(User, email)
+        return _user_row_to_dict(row) if row else None
+
+def db_save_single_user(email: str, data: Dict[str, Any]) -> None:
+    with SessionLocal() as db:
+        fields = _dict_to_user_fields(data)
+        row = db.get(User, email)
+        if not row:
+            row = User(email=email)
+            db.add(row)
+        row.name = fields.get("name")
+        row.password = fields.get("password")
+        row.promos = bool(fields.get("promos", False))
+        row.has_paid = bool(fields.get("has_paid", False))
+        row.videos_left = int(fields.get("videos_left", 0) or 0)
+        row.max_credits = int(fields.get("max_credits", 0) or 0)
+        row.plan_name = fields.get("plan_name")
+        row.plan_started_at = fields.get("plan_started_at")
+        row.plan_expiry = fields.get("plan_expiry")
+        row.cancelled = bool(fields.get("cancelled", False))
+        db.commit()
+
+def db_append_order(order_dict: Dict[str, Any]) -> None:
+    """Append a single order (matches your 'load->append->save' pattern)."""
+    with SessionLocal() as db:
+        row = Order(
+            id=order_dict.get("id"),
+            email=order_dict.get("email"),
+            plan=order_dict.get("plan"),
+            amount=float(order_dict.get("amount", 0)),
+            videos_left=int(order_dict.get("videos_left", 0) or 0),
+            end_date=order_dict.get("end_date"),
+            created_at=datetime.fromisoformat(order_dict["created_at"]) if isinstance(order_dict.get("created_at"), str) else (order_dict.get("created_at") or datetime.utcnow()),
+            provider=order_dict.get("provider"),
+            paypal_order_id=order_dict.get("paypal_order_id"),
+        )
+        db.add(row)
+        db.commit()
+
+def db_load_orders() -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    with SessionLocal() as db:
+        for o in db.query(Order).order_by(Order.created_at.asc()).all():
+            out.append({
+                "id": o.id,
+                "email": o.email,
+                "plan": o.plan,
+                "amount": o.amount,
+                "videos_left": o.videos_left,
+                "end_date": o.end_date,
+                "created_at": o.created_at.isoformat() if o.created_at else None,
+                "provider": o.provider,
+                "paypal_order_id": o.paypal_order_id,
+            })
+    return out
+
+# ---------- keep your old JSON helpers but make them DB-aware ----------
+
 def load_users():
+    if DATABASE_URL:
+        return db_load_users()
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, "r") as f:
@@ -52,16 +236,14 @@ def load_users():
     return {}
 
 def save_users(users: dict):
+    if DATABASE_URL:
+        return db_save_users(users)
     with open(USERS_FILE, "w") as f:
         json.dump(users, f, indent=4)
 
-def now():
-    return datetime.now()
-
-def next_month(from_dt: datetime) -> datetime:
-    return from_dt + timedelta(days=30)
-
 def load_orders():
+    if DATABASE_URL:
+        return db_load_orders()
     if os.path.exists(ORDERS_FILE):
         try:
             with open(ORDERS_FILE, "r") as f:
@@ -72,6 +254,12 @@ def load_orders():
     return []
 
 def save_orders(orders: list):
+    if DATABASE_URL:
+        # your code always: orders = load_orders(); orders.append(order); save_orders(orders)
+        # In DB mode, only insert the last appended order to avoid duplicating everything.
+        if orders:
+            db_append_order(orders[-1])
+        return
     with open(ORDERS_FILE, "w") as f:
         json.dump(orders, f, indent=2)
 

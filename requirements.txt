@@ -6,3 +6,4 @@ replicate
 requests
 python-dotenv
 itsdangerous
+psycopg[binary]
