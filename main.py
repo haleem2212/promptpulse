@@ -265,7 +265,7 @@ def save_orders(orders: list):
 
 # For styling/logic: a consistent list of plans
 PLANS = {
-    "basic": {"name": "Basic", "price": 0.20, "videos": 5},
+    "basic": {"name": "Basic", "price": 24.99, "videos": 5},
     "pro": {"name": "Pro", "price": 49.99, "videos": 15},
     "elite": {"name": "Elite", "price": 99.99, "videos": 40},
 }
