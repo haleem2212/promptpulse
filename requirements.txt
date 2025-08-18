@@ -6,4 +6,5 @@ replicate
 requests
 python-dotenv
 itsdangerous
-psycopg[binary]
+sqlalchemy>=2.0
+psycopg[binary]>=3.2
